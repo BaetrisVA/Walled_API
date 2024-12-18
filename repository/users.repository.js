@@ -1,50 +1,39 @@
-// const pool = require("../db/db");
-const Pool = require('pg').Pool
-const pool = new Pool({
-  user: 'postgres',
-  host: 'localhost',
-  database: 'Walled_db',
-  password: 'Arianto185125.',
-  port: 5432,
-});
+const pool = require("../db/db");
 
 const findUserById = async (id) => {
     try {
       const result = await pool.query("SELECT * FROM users where id = $1", [id]);
       return result.rows[0];
     } catch (error) {
-      // console.log(error);
       throw new Error("Something went wrong");
     }
   };
 
 const findUserByEmail = async (email) => {
   try {
-    const result = await pool.query("SELECT * FROM users where user_email = $1", [
+    const result = await pool.query("SELECT * FROM users where email = $1", [
       email,
     ]);
     return result;
   } catch (error) {
-    console.log(error);
     throw new Error("Something went wrong");
   }
 };
 
 const createUser = async (user) => {
   const { email, username, fullname, password, avatar_url } = user;
-  console.log("User", user)
 
   const client = await pool.connect();
-  console.log(email, "email apa")
 
   try {
     await client.query("BEGIN");
     const userResult = await client.query(
       `INSERT INTO users (email, username, fullname, password, avatar_url) 
        VALUES ($1, $2, $3, $4, $5) 
-       RETURNING email, username, fullname, password, avatar_url`,
+       RETURNING id, email, username, fullname, password, avatar_url`,
       [email, username, fullname, password, avatar_url]
     );
+
     const newUser = userResult.rows[0];
 
     const walletResult = await client.query(
@@ -62,7 +51,6 @@ const createUser = async (user) => {
       wallet: newWallet,
     };
   } catch (error) {
-    console.log(error)
     await client.query("ROLLBACK");
     throw new Error(
       "Database error occurred while creating the user and wallet."
