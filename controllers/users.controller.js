@@ -8,7 +8,6 @@ const registerSchema = Joi.object({
   password: Joi.string().required(),
   avatar_url: Joi.string().optional(),
   fullname: Joi.string().required(),
-  balance: Joi.string().required(),
 });
 
 const loginSchema = Joi.object({

@@ -31,16 +31,43 @@ const findUserByEmail = async (email) => {
 };
 
 const createUser = async (user) => {
-  const { email, username, fullname, password, balance } = user;
+  const { email, username, fullname, password, avatar_url } = user;
+
+  const client = await pool.connect();
+  console.log(email, "email apa")
 
   try {
-    const result = await pool.query(
-      "INSERT INTO users (email, username, fullname, password, balance) VALUES ($1, $2, $3, $4, $5) RETURNING *",
-      [email, username, fullname, password, balance]
+    await client.query("BEGIN");
+    const userResult = await client.query(
+      `INSERT INTO public.users (email, username, fullname, password, avatar_url) 
+       VALUES ($1, $2, $3, $4, $5) 
+       RETURNING email, username, fullname, password, avatar_url`,
+      [email, username, fullname, password, avatar_url]
     );
-    return result.rows[0];
+    const newUser = userResult.rows[0];
+
+    const walletResult = await client.query(
+      `INSERT INTO wallets (user_id, balance) 
+       VALUES ($1, $2) 
+       RETURNING id, account_number, balance, created_at, updated_at`,
+      [newUser.id, 0.0]
+    );
+    const newWallet = walletResult.rows[0];
+
+    await client.query("COMMIT");
+
+    return {
+      ...newUser,
+      wallet: newWallet,
+    };
   } catch (error) {
-    throw new Error("Database error occurred while creating the user.");
+    console.log(error)
+    await client.query("ROLLBACK");
+    throw new Error(
+      "Database error occurred while creating the user and wallet."
+    );
+  } finally {
+    client.release();
   }
 };
 

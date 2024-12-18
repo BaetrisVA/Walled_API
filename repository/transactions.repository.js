@@ -48,6 +48,7 @@ const createTransactions = async (transactions) => {
     );
     return result.rows[0];
   } catch (error) {
+    console.log(error)
     throw new Error("Database error occurred while creating the transactions.");
   }
 };
