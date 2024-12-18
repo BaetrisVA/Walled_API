@@ -32,6 +32,7 @@ const findUserByEmail = async (email) => {
 
 const createUser = async (user) => {
   const { email, username, fullname, password, avatar_url } = user;
+  console.log("User", user)
 
   const client = await pool.connect();
   console.log(email, "email apa")
@@ -39,7 +40,7 @@ const createUser = async (user) => {
   try {
     await client.query("BEGIN");
     const userResult = await client.query(
-      `INSERT INTO public.users (email, username, fullname, password, avatar_url) 
+      `INSERT INTO users (email, username, fullname, password, avatar_url) 
        VALUES ($1, $2, $3, $4, $5) 
        RETURNING email, username, fullname, password, avatar_url`,
       [email, username, fullname, password, avatar_url]
