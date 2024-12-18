@@ -18,12 +18,12 @@ const createTransactions = async (req, res) => {
     const { error, value } = transactionsSchema.validate(req.body);
 
     if (error) {
-      return res.status(400).json({ error: error.message });
+      return res.status(400).json({ error: error?.message });
     }
     const transactions = await transactionsService.createTransactions(value, id);
     res.status(201).json({data: new transactionsReponse(transactions)});
   } catch (error) {
-    res.status(error.statusCode || 500).json({ error: error.message });
+    res.status(error.statusCode || 500).json({ error: error?.message });
   }
 };
 
@@ -33,10 +33,10 @@ const getTransactionsById =async (req, res) => {
         const transactions = await transactionsService.getTransactionsById(Number(id));
         res.status(200).json({data: new transactionsReponse(transactions)});
     } catch (error){
-        if(error.message === "transactions not found"){
-            return res.status(404).json({error: error.message});
+        if(error?.message === "transactions not found"){
+            return res.status(404).json({error: error?.message});
         }
-        res.status(error.status.statusCode||500).json({error:error.message});
+        res.status(error.status.statusCode||500).json({error:error?.message});
     }
 }
 

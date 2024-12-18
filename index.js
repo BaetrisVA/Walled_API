@@ -52,7 +52,7 @@ const routeHandler = (req, res) => {
   const {error, value} = schema.validate(req.body)
   if  (error?.message) {
     console.log(error)
-    return res.status(400).json({message: error.message})
+    return res.status(400).json({message: error?.message})
   } 
   res.status(200).json("heloo")
 };
