@@ -1,46 +1,64 @@
 const bcrypt = require("bcrypt");
-const userRepository = require("../repository/users.repository");
-const { rows } = require("pg/lib/defaults");
-const { generateAccessToken } = require("../utils/aut.util");
+const userRepository = require("../repositories/users.repository");
+const { generateAccessToken } = require("../utils/auth.util");
+const {
+  UserAlreadyExistsError,
+  AuthenticationError,
+  NotFoundError,
+} = require("../dto/customErrors");
 
 const createUser = async (userData) => {
-  let user = await userRepository.findUserByEmail(userData.email);
-  if (user.rows.length > 0) {
-    throw new Error("user already exist");
+  const existingUser = await userRepository.findUserByEmail(userData.email);
+  if (existingUser) {
+    throw new UserAlreadyExistsError();
   }
+
   const salt = await bcrypt.genSalt();
   const hashedPassword = await bcrypt.hash(userData.password, salt);
-  const newUser = {...userData, password: hashedPassword}
-  console.log(newUser);
-  user =  await userRepository.createUser(newUser);
-  return user;
+
+  const newUser = { ...userData, password: hashedPassword };
+
+  const createdUser = await userRepository.createUser(newUser);
+  return createdUser;
 };
 
 const login = async (userData) => {
-    let user = await userRepository.findUserByEmail(userData.email);
+  const user = await userRepository.findUserByEmail(userData.email);
 
-    if (user.rows.length === 0) {
-        throw new Error(404);
-    }
- 
-    const isPasswordMatched = await bcrypt.compare(userData.password, user.rows[0].user_password);
+  if (!user) {
+    throw new AuthenticationError();
+  }
 
-    if (!isPasswordMatched) {
-        throw new Error(401);
-      }
-      console.log(user, "user")
-    
-      const token = generateAccessToken({ email: user.rows[0].email, id: user.rows[0].id });
-    
-      return token;
-    };
-    
-const getUserById = async(id) => {
-    let user = await userRepository.findUserById(id);
-    if (!user){
-        throw new Error("user not found");
-    }
-    return user;
-}
+  const isPasswordMatched = await bcrypt.compare(
+    userData.password,
+    user.password
+  );
 
-module.exports = { createUser, getUserById, login };
+  if (!isPasswordMatched) {
+    throw new AuthenticationError();
+  }
+  const token = generateAccessToken({
+    email: user.email,
+    id: user.id,
+    walletId: user.wallet_id,
+  });
+  return token;
+};
+
+const getUserById = async (id) => {
+  const user = await userRepository.findUserById(id);
+
+  if (!user) {
+    throw new NotFoundError("User not found");
+  }
+
+  return {
+    ...user,
+    wallet: {
+      account_number: user.account_number,
+      balance: user.balance,
+    },
+  };
+};
+
+module.exports = { createUser, login, getUserById };
